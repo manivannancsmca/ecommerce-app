@@ -1,0 +1,122 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+
+      httpclient:
+        connect-timeout: 10000
+        response-timeout: 30s
+
+      reactor:
+        netty:
+          http:
+            client:
+              resolver:
+                type: DEFAULT
+
+      routes:
+        - id: product-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/v1/products/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: productServiceCircuitBreaker
+                fallbackUri: forward:/fallback/product-fallback
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                key-resolver: "#{@userKeyResolver}"
+
+        - id: order-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/v1/orders/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: orderServiceCircuitBreaker
+                fallbackUri: forward:/fallback/order-fallback
+
+        - id: payment-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/v1/payments/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: paymentServiceCircuitBreaker
+                fallbackUri: forward:/fallback/payment-fallback
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+# ==================== RESILIENCE4J CIRCUIT BREAKER ====================
+resilience4j:
+  circuitbreaker:
+    instances:
+      productServiceCircuitBreaker:
+        slidingWindowSize: 30
+        minimumNumberOfCalls: 10
+        permittedNumberOfCallsInHalfOpenState: 8
+        failureRateThreshold: 85
+        waitDurationInOpenState: 30s
+        slowCallRateThreshold: 80
+        slowCallDurationThreshold: 5s
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+
+      orderServiceCircuitBreaker:
+        slidingWindowSize: 30
+        minimumNumberOfCalls: 10
+        permittedNumberOfCallsInHalfOpenState: 8
+        failureRateThreshold: 85
+        waitDurationInOpenState: 30s
+
+      paymentServiceCircuitBreaker:
+        slidingWindowSize: 30
+        minimumNumberOfCalls: 10
+        permittedNumberOfCallsInHalfOpenState: 8
+        failureRateThreshold: 85
+        waitDurationInOpenState: 30s
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0 # Force 100% trace capture
+  observations:
+    key-values:
+      application: ${spring.application.name}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,gateway
+  endpoint:
+    gateway:
+      access: unrestricted
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:-},%X{traceId:-},%X{spanId:-}]"
+  level:
+    org.springframework.cloud.gateway: INFO
+    io.github.resilience4j.circuitbreaker: INFO
