@@ -69,9 +69,11 @@ management:
       probability: 1.0
     propagation:
       type: w3c
-  otlp:
+  # CRITICAL: This tells Micrometer to bridge OTel trace keys directly to Logback MDC keys
+  api:
     tracing:
-      endpoint: http://localhost:4317
+      mixin:
+        logging: true
 
 
 
