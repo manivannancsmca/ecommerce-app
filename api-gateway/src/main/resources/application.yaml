@@ -101,18 +101,14 @@ resilience4j:
 
 management:
   tracing:
+    enabled: true
     sampling:
-      probability: 1.0 # Force 100% trace capture
-  observations:
-    key-values:
-      application: ${spring.application.name}
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus,gateway
-  endpoint:
-    gateway:
-      access: unrestricted
+      probability: 1.0  # Trace 100% of requests in dev
+    propagation:
+      type: w3c         # OTel uses W3C 'traceparent' standards
+  otlp:
+    tracing:
+      endpoint: http://localhost:4317 # Points to your OpenTelemetry Collector / Jaeger
 
 logging:
   pattern:
