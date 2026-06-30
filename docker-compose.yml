@@ -196,12 +196,22 @@ services:
   # -----------------------------
   # ZIPKIN
   # -----------------------------
-  zipkin:
-    image: openzipkin/zipkin:3
-    container_name: zipkin-server
+  #zipkin:
+  #  image: openzipkin/zipkin:3
+  #  container_name: zipkin-server
 
+  # ports:
+  #    - "9411:9411"
+
+  # -----------------------------
+  # JAEGER
+  # -----------------------------
+  jaeger:
+    image: jaegertracing/all-in-one:latest
     ports:
-      - "9411:9411"
+      - "16686:16686" # Jaeger UI
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
 
 volumes:
   product_db_data:
