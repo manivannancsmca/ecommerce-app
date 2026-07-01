@@ -58,6 +58,11 @@ spring:
                   args:
                     name: orderServiceCircuitBreaker
                     fallbackUri: forward:/fallback/order-fallback
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    key-resolver: "#{@userKeyResolver}"
 
             - id: payment-service
               uri: http://localhost:8083
@@ -70,6 +75,11 @@ spring:
                   args:
                     name: paymentServiceCircuitBreaker
                     fallbackUri: forward:/fallback/payment-fallback
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    key-resolver: "#{@userKeyResolver}"
 
       reactor:
         netty:
@@ -90,6 +100,10 @@ resilience4j:
     instances:
       productServiceCircuitBreaker:
         timeoutDuration: 5s # Gives the database transaction up to 5 seconds to fully complete
+      orderServiceCircuitBreaker:
+        timeoutDuration: 5s
+      paymentServiceCircuitBreaker:
+        timeoutDuration: 5s
 
   circuitbreaker:
     instances:
