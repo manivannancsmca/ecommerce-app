@@ -51,6 +51,8 @@ spring:
               uri: http://localhost:8082
               predicates:
                 - Path=/api/v1/orders/**
+              metadata:
+                operation.name: "Order Data"
               filters:
                 - name: CircuitBreaker
                   args:
@@ -61,6 +63,8 @@ spring:
               uri: http://localhost:8083
               predicates:
                 - Path=/api/v1/payments/**
+              metadata:
+                operation.name: "Payment Data"
               filters:
                 - name: CircuitBreaker
                   args:
@@ -92,6 +96,11 @@ resilience4j:
         slowCallRateThreshold: 80
         slowCallDurationThreshold: 5s
         automaticTransitionFromOpenToHalfOpenEnabled: true
+  # === ADD THIS TIMELIMITER CONFIGURATION BLOCK ===
+  timelimiter:
+    instances:
+      productServiceCircuitBreaker:
+        timeoutDuration: 5s # Gives the database transaction up to 5 seconds to fully complete
 
       orderServiceCircuitBreaker:
         slidingWindowSize: 30

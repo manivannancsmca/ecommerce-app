@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.api_gateway.dto.StandardResponse;
+
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,10 +28,16 @@ public class FallbackController {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
     }
 
-    @GetMapping("/product-fallback")
-    public ResponseEntity<Map<String, Object>> productServiceFallback() {
-        return createFallbackResponse("Product Service is taking longer than expected to respond.");
-    }
+    @RequestMapping("/product-fallback")
+    public ResponseEntity<StandardResponse<Object>> productFallback() {
+    StandardResponse<Object> response = StandardResponse.builder()
+            .timestamp(LocalDateTime.now())
+            .status(HttpStatus.SERVICE_UNAVAILABLE.value())
+            .success(false)
+            .message("Product service is currently unavailable or timed out. Please try again later.")
+            .build();
+    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+}
 
     @GetMapping("/order-fallback")
     public ResponseEntity<Map<String, Object>> orderServiceFallback() {
