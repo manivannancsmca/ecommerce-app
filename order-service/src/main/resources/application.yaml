@@ -38,20 +38,22 @@ spring:
       - localhost:19094
     consumer:
       group-id: order-group
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       auto-offset-reset: earliest
       enable-auto-commit: false
       properties:
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
         spring.json.trusted.packages: "*"
         
-        # 1. Point this to your LOCAL class path where you want to read the data
-        spring.json.value.default.type: "com.order_service.event.PaymentFailedEvent"
+        # FIX: Enable type headers so Spring reads incoming class paths and processes your mapping below
+        spring.json.use.type.headers: true
         
-        # 2. Crucial: Tell it to ignore what the Payment Service sent in the header
-        spring.json.use.type.headers: false
-        spring.json.type.mapping: "paymentFailed:com.order_service.event.PaymentFailedEvent"
+        # MAP THE FULL PATH CLASS STRINGS FROM OTHER SERVICES TO YOUR LOCAL EVENT CLASSES
+        spring.json.type.mapping: >-
+          com.product_service.event.InventoryAllocatedEvent:com.order_service.event.InventoryAllocatedEvent,
+          com.payment_service.event.PaymentFailedEvent:com.order_service.event.PaymentFailedEvent,
+          com.inventory_service.event.InventoryFailedEvent:com.order_service.event.InventoryFailedEvent
+          
         max.poll.records: 500
         session.timeout.ms: 45000
         heartbeat.interval.ms: 15000
@@ -72,7 +74,6 @@ eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
-    # Protect the thread pool by setting strict timeouts on Eureka HTTP calls
     eureka-server-connect-timeout-seconds: 5
     eureka-server-read-timeout-seconds: 5
     register-with-eureka: true
@@ -85,20 +86,17 @@ logging:
     level: "%5p [${spring.application.name:-},%X{traceId:-},%X{spanId:-}]"
     
 management:
-  # 1. Disable the OTLP Metric Registry globally
   otlp:
     metrics:
       export:
         enabled: false
-    # 2. Correct native OTLP Tracing configuration for Spring Boot 3.4/3.5
     tracing:
       endpoint: http://localhost:4318/v1/traces
 
-  # 3. Keep standard Tracing configurations active 
   tracing:
     export:
       enabled: true
     sampling:
-      probability: 1.0  # Captures 100% of requests for dev testing
+      probability: 1.0  
     propagation:
-      type: w3c         # Standard OpenTelemetry layout
+      type: w3c
