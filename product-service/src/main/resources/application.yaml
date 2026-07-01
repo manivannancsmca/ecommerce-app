@@ -57,31 +57,33 @@ eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+    # Protect the thread pool by setting strict timeouts on Eureka HTTP calls
+    eureka-server-connect-timeout-seconds: 5
+    eureka-server-read-timeout-seconds: 5
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
 
 logging:
   pattern:
     level: "%5p [${spring.application.name:-},%X{traceId:-},%X{spanId:-}]"
     
 management:
-  tracing:
-    enabled: true
-    sampling:
-      probability: 1.0
-    propagation:
-      type: w3c
-  # CRITICAL: This tells Micrometer to bridge OTel trace keys directly to Logback MDC keys
-  api:
+  # 1. Disable the OTLP Metric Registry globally
+  otlp:
+    metrics:
+      export:
+        enabled: false
+    # 2. Correct native OTLP Tracing configuration for Spring Boot 3.4/3.5
     tracing:
-      mixin:
-        logging: true
+      endpoint: http://localhost:4318/v1/traces
 
-
-
-# springdoc:
-#   api-docs:
-#     enabled: true
-#   swagger-ui:
-#     enabled: true
-#   # Add this line:
-#   use-management-port: false
-#   packages-to-scan: com.product_service
+  # 3. Keep standard Tracing configurations active 
+  tracing:
+    export:
+      enabled: true
+    sampling:
+      probability: 1.0  # Captures 100% of requests for dev testing
+    propagation:
+      type: w3c         # Standard OpenTelemetry layout

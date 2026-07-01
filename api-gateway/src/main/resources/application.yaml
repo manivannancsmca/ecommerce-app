@@ -5,6 +5,9 @@ spring:
   application:
     name: api-gateway
 
+  reactor:
+    context-propagation: auto
+
   data:
     redis:
       host: localhost
@@ -14,14 +17,55 @@ spring:
     gateway:
       server:
         webflux:
+          # --- ADD THIS BLOCK HERE ---
+          metrics:
+            enabled: true
           discovery:
             locator:
               enabled: true
               lower-case-service-id: true
+          # Fixed Location 1: Moved httpclient inside server.webflux
+          httpclient:
+            connect-timeout: 10000
+            response-timeout: 30s
+          # Fixed Location 2: Moved routes inside server.webflux
+          routes:
+            - id: product-service
+              uri: http://localhost:8081
+              predicates:
+                - Path=/api/v1/products/**
+              metadata:
+                operation.name: "Product Data"
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: productServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/product-fallback
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    key-resolver: "#{@userKeyResolver}"
 
-      httpclient:
-        connect-timeout: 10000
-        response-timeout: 30s
+            - id: order-service
+              uri: http://localhost:8082
+              predicates:
+                - Path=/api/v1/orders/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: orderServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/order-fallback
+
+            - id: payment-service
+              uri: http://localhost:8083
+              predicates:
+                - Path=/api/v1/payments/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: paymentServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/payment-fallback
 
       reactor:
         netty:
@@ -29,42 +73,6 @@ spring:
             client:
               resolver:
                 type: DEFAULT
-
-      routes:
-        - id: product-service
-          uri: http://localhost:8081
-          predicates:
-            - Path=/api/v1/products/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: productServiceCircuitBreaker
-                fallbackUri: forward:/fallback/product-fallback
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 10
-                redis-rate-limiter.burstCapacity: 20
-                key-resolver: "#{@userKeyResolver}"
-
-        - id: order-service
-          uri: http://localhost:8082
-          predicates:
-            - Path=/api/v1/orders/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: orderServiceCircuitBreaker
-                fallbackUri: forward:/fallback/order-fallback
-
-        - id: payment-service
-          uri: http://localhost:8083
-          predicates:
-            - Path=/api/v1/payments/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: paymentServiceCircuitBreaker
-                fallbackUri: forward:/fallback/payment-fallback
 
 eureka:
   client:
@@ -100,15 +108,20 @@ resilience4j:
         waitDurationInOpenState: 30s
 
 management:
-  tracing:
-    enabled: true
-    sampling:
-      probability: 1.0  # Trace 100% of requests in dev
-    propagation:
-      type: w3c         # OTel uses W3C 'traceparent' standards
   otlp:
+    metrics:
+      export:
+        enabled: false
     tracing:
-      endpoint: http://localhost:4317 # Points to your OpenTelemetry Collector / Jaeger
+      endpoint: http://localhost:4318/v1/traces
+
+  tracing:
+    export:
+      enabled: true
+    sampling:
+      probability: 1.0  
+    propagation:
+      type: w3c         
 
 logging:
   pattern:
