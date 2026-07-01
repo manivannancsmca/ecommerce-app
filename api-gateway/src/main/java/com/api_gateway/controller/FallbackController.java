@@ -30,18 +30,24 @@ public class FallbackController {
 
     @RequestMapping("/product-fallback")
     public ResponseEntity<StandardResponse<Object>> productFallback() {
-    StandardResponse<Object> response = StandardResponse.builder()
-            .timestamp(LocalDateTime.now())
-            .status(HttpStatus.SERVICE_UNAVAILABLE.value())
-            .success(false)
-            .message("Product service is currently unavailable or timed out. Please try again later.")
-            .build();
-    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
-}
+        StandardResponse<Object> response = StandardResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.SERVICE_UNAVAILABLE.value())
+                .success(false)
+                .message("Product service is currently unavailable or timed out. Please try again later.")
+                .build();
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+    }
 
-    @GetMapping("/order-fallback")
-    public ResponseEntity<Map<String, Object>> orderServiceFallback() {
-        return createFallbackResponse("Order Service is taking longer than expected to respond.");
+    @RequestMapping("/order-fallback")
+    public ResponseEntity<StandardResponse<Object>> orderFallback() {
+        StandardResponse<Object> response = StandardResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.SERVICE_UNAVAILABLE.value())
+                .success(false)
+                .message("Order service is currently unavailable or timed out. Please try again later.")
+                .build();
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
     }
 
     @GetMapping("/payment-fallback")

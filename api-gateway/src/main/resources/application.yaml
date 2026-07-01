@@ -85,6 +85,12 @@ eureka:
 
 # ==================== RESILIENCE4J CIRCUIT BREAKER ====================
 resilience4j:
+  # === ADD THIS TIMELIMITER CONFIGURATION BLOCK ===
+  timelimiter:
+    instances:
+      productServiceCircuitBreaker:
+        timeoutDuration: 5s # Gives the database transaction up to 5 seconds to fully complete
+
   circuitbreaker:
     instances:
       productServiceCircuitBreaker:
@@ -96,11 +102,7 @@ resilience4j:
         slowCallRateThreshold: 80
         slowCallDurationThreshold: 5s
         automaticTransitionFromOpenToHalfOpenEnabled: true
-  # === ADD THIS TIMELIMITER CONFIGURATION BLOCK ===
-  timelimiter:
-    instances:
-      productServiceCircuitBreaker:
-        timeoutDuration: 5s # Gives the database transaction up to 5 seconds to fully complete
+
 
       orderServiceCircuitBreaker:
         slidingWindowSize: 30
