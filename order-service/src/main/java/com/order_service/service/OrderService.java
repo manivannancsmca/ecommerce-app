@@ -46,7 +46,7 @@ public class OrderService {
         }
         
         ProductResponse productDetails = feignResponse.getBody().getData();
-        log.info("productDetails : {} ", productDetails);
+        //log.info("productDetails : {} ", productDetails);
 
         // 3. Calculate dynamic pricing using the actual product price
         BigDecimal totalAmount = productDetails.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()));
@@ -70,8 +70,8 @@ public class OrderService {
                 .quantity(savedOrder.getQuantity())
                 .totalAmount(savedOrder.getTotalAmount())
                 .build();
-        log.info("OrderPlacedEvent : {} ", event);
-        //kafkaTemplate.send("order-placed-topic", String.valueOf(savedOrder.getId()), event);
+        //log.info("OrderPlacedEvent : {} ", event);
+        kafkaTemplate.send("order-placed-topic", String.valueOf(savedOrder.getId()), event);
         
         return mapToResponse(savedOrder);
     }
