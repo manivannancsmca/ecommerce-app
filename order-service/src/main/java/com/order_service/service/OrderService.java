@@ -72,7 +72,7 @@ public class OrderService {
                 .build();
         //log.info("OrderPlacedEvent : {} ", event);
         kafkaTemplate.send("order-placed-topic", String.valueOf(savedOrder.getId()), event);
-        
+        log.info("order-placed-topic :::::::::: ", String.valueOf(savedOrder.getId()));
         return mapToResponse(savedOrder);
     }
 

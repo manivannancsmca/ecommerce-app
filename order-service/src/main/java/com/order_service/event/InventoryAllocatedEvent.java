@@ -1,8 +1,15 @@
 package com.order_service.event;
 
+import java.io.Serializable;
+
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
-public class InventoryAllocatedEvent {
+@AllArgsConstructor
+@NoArgsConstructor
+public class InventoryAllocatedEvent implements Serializable {
+    private static final long serialVersionUID = 1L;
     private Long orderId;
 }
