@@ -28,11 +28,11 @@ public class OrderSagaListener {
         });
     }
 
+    // FIX: Changed String to Object to safely absorb deserialized event DTOs without casting errors
     @KafkaListener(topics = {"payment-failed-topic", "inventory-failed-topic"}, groupId = "order-group")
     @Transactional
-    public void handleSagaRollback(String messagePayload) {
-        // Handle fallback parsing generically based on tracking identifiers
-        log.warn("Saga Compensation Triggered. Rolling back Order lifecycle states...");
+    public void handleSagaRollback(Object messagePayload) {
+        log.warn("Saga Compensation Triggered via general tracker: {}", messagePayload.getClass().getSimpleName());
     }
     
     @KafkaListener(topics = "payment-failed-topic", groupId = "order-group")
@@ -52,7 +52,6 @@ public class OrderSagaListener {
         orderRepository.findById(event.getOrderId()).ifPresent(order -> {
             order.setOrderStatus("CANCELLED_OUT_OF_STOCK");
             orderRepository.save(order);
-            // In a complete workflow, a separate event would also reverse payment here
         });
     }
 }

@@ -43,7 +43,15 @@ spring:
       auto-offset-reset: earliest
       enable-auto-commit: false
       properties:
-        spring.json.trusted.packages: "com.order_service.event"
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.trusted.packages: "*"
+        
+        # 1. Point this to your LOCAL class path where you want to read the data
+        spring.json.value.default.type: "com.order_service.event.PaymentFailedEvent"
+        
+        # 2. Crucial: Tell it to ignore what the Payment Service sent in the header
+        spring.json.use.type.headers: false
+        spring.json.type.mapping: "paymentFailed:com.order_service.event.PaymentFailedEvent"
         max.poll.records: 500
         session.timeout.ms: 45000
         heartbeat.interval.ms: 15000
@@ -58,6 +66,7 @@ spring:
       properties:
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
+        spring.json.type.mapping: "orderPlaced:com.order_service.event.OrderPlacedEvent"
 
 eureka:
   client:

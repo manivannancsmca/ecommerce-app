@@ -37,12 +37,19 @@ spring:
       - localhost:19094
     consumer:
       group-id: payment-group
+      auto-offset-reset: latest  #earliest
+      # Uses ErrorHandlingDeserializer to catch bad records without crashing the thread loop
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      auto-offset-reset: earliest
-      enable-auto-commit: false
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
-        spring.json.trusted.packages: "com.payment_service.event"
+        # Delegates processing to the standard Jackson JsonDeserializer
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        # Trusts all packages for deserialization
+        spring.json.trusted.packages: "*"
+        # Forces fallback deserialization strictly into your local event class
+        spring.json.value.default.type: "com.payment_service.event.OrderPlacedEvent"
+        # CRITICAL: Ignores the incoming __TypeId__ header from the Order Service completely
+        spring.json.use.type.headers: false
         max.poll.records: 500
         session.timeout.ms: 45000
         heartbeat.interval.ms: 15000
@@ -57,6 +64,7 @@ spring:
       properties:
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
+        spring.json.type.mapping: "paymentFailed:com.payment_service.event.PaymentFailedEvent"
 
 eureka:
   client:
